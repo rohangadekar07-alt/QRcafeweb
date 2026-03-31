@@ -1,10 +1,10 @@
 "use client";
 import { Section } from "@/components/Section";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Coffee, MapPin, Phone, Instagram, Facebook, Utensils, Wheat, Sparkles } from "lucide-react";
+import { Coffee, MapPin, Phone, Instagram, Facebook, Utensils, Wheat, Sparkles, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const menuItems = {
   coffee: [
@@ -24,12 +24,59 @@ export default function LandingPage() {
   const [activeSection, setActiveSection] = useState("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [reviews, setReviews] = useState([
+    { name: "Julian Thorne", role: "Gastronomy Critic", text: "The Wagyu burger is a masterclass in balance. I've travelled the world, but the precision here is simply unmatched." },
+    { name: "Elara Vance", role: "Vogue Collective", text: "A multi-sensory haven. From the velvet texture of the latte to the cinematic lighting, it's architectural artistry on a plate." },
+    { name: "Marcus Reid", role: "Roastery Artisan", text: "The bean sourcing profile here is better than most boutique ateliers in Milan. Truly gold-standard craftsmanship." }
+  ]);
+  const [newReview, setNewReview] = useState({ name: "", text: "" });
+  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
+
+  const nextReview = () => {
+    setActiveReviewIndex((prev) => (prev + 1) % reviews.length);
+  };
+
+  const prevReview = () => {
+    setActiveReviewIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+  };
+
+  const submitReview = () => {
+    if (newReview.name && newReview.text) {
+      setReviews([{ ...newReview, role: "Community Member" }, ...reviews]);
+      setNewReview({ name: "", text: "" });
+      setActiveReviewIndex(0);
+    }
+  };
   
-  // Dynamic Navbar logic for scroll tracking
+  // Dynamic Navbar logic for scroll tracking and section detection
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    const sections = ["home", "story", "culinary", "menu", "contact"];
+    const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px', // Detects section when it occupies the upper-middle part of the viewport
+        threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                setActiveSection(entry.target.id);
+            }
+        });
+    }, observerOptions);
+
+    sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el);
+    });
+
+    return () => {
+        window.removeEventListener("scroll", handleScroll);
+        observer.disconnect();
+    };
   }, []);
 
   const { scrollYProgress } = useScroll();
@@ -39,7 +86,7 @@ export default function LandingPage() {
   return (
     <main className="relative min-h-screen bg-[#FDF8F5] text-[#2C1810]">
       {/* Dynamic Navbar */}
-      <nav className={`fixed top-0 w-full z-50 px-6 py-5 md:px-12 flex justify-between items-center transition-all duration-700 ${
+      <nav className={`fixed top-0 w-full z-[100] px-6 py-5 md:px-12 flex justify-between items-center transition-all duration-700 ${
         isScrolled 
           ? "bg-[#FDF8F5]/40 backdrop-blur-3xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]" 
           : "bg-transparent border-transparent"
@@ -270,8 +317,27 @@ export default function LandingPage() {
       </Section>
 
       {/* Culinary Excellence Section */}
-      <Section id="culinary" className="bg-[#FDF8F5] overflow-hidden">
-        <div className="grid lg:grid-cols-2 gap-20 items-center">
+      <Section id="culinary" className="bg-[#FDF8F5] overflow-hidden relative">
+         {/* Highly Visible Fluid Silk Background Design */}
+         <div className="absolute inset-0 pointer-events-none select-none z-0">
+            {/* Main Top Swirl - High Visibility */}
+            <div className="absolute -top-1/4 -right-1/4 w-[120%] h-[120%] bg-gradient-to-bl from-[#D4A373]/30 via-[#C28A5E]/40 to-transparent rounded-full blur-[140px] opacity-100" />
+            
+            {/* Deep Silk Flow Line 1 */}
+            <svg className="absolute top-1/2 left-0 w-full h-full opacity-60 text-[#D4A373]" viewBox="0 0 1440 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+               <path d="M-100 200C200 400 600 100 900 300C1200 500 1600 200 1800 400" stroke="currentColor" strokeWidth="180" strokeLinecap="round" className="blur-[120px]" />
+            </svg>
+
+            {/* Deep Silk Flow Line 2 */}
+            <svg className="absolute -bottom-1/4 -left-1/4 w-full h-full opacity-50 text-[#C28A5E]" viewBox="0 0 1440 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+               <path d="M1600 600C1300 400 900 700 600 500C300 300 -100 600 -300 400" stroke="currentColor" strokeWidth="220" strokeLinecap="round" className="blur-[160px]" />
+            </svg>
+
+            {/* Glowing Accent Point */}
+            <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#D4A373]/20 rounded-full blur-[120px] opacity-100" />
+         </div>
+
+         <div className="grid lg:grid-cols-2 gap-20 items-center relative z-10">
           <div className="relative group">
              <motion.div 
                whileHover={{ scale: 0.98 }}
@@ -383,6 +449,101 @@ export default function LandingPage() {
          </div>
       </section>
 
+      {/* The Alchemist's Tale (Imaginative Story Section) */}
+      <Section id="story-archive" className="bg-[#1A0F0A] text-[#FDF8F5] !py-32 relative overflow-hidden">
+         {/* Background Decorative Design: Coffee Branch & Leaf Motif */}
+         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none opacity-[0.03]">
+            {/* Top Right Branch */}
+            <svg className="absolute -top-10 -right-20 w-[600px] h-auto text-[#D4A373] rotate-12" viewBox="0 0 100 100" fill="currentColor">
+              <path d="M10,80 C20,75 50,70 80,10 M50,45 L40,35 M55,40 L65,30 M65,25 L75,15 M30,60 C25,55 20,40 25,30 M70,45 C75,50 90,55 95,45 M45,70 C40,75 25,80 15,75 M80,25 C85,25 95,35 90,45" stroke="currentColor" strokeWidth="0.5" fill="none" />
+              <ellipse cx="25" cy="30" rx="4" ry="7" transform="rotate(-20 25 30)" />
+              <ellipse cx="95" cy="45" rx="4" ry="7" transform="rotate(20 95 45)" />
+              <ellipse cx="15" cy="75" rx="3" ry="6" transform="rotate(-40 15 75)" />
+              <ellipse cx="90" cy="45" rx="4" ry="7" transform="rotate(40 90 45)" />
+              <ellipse cx="40" cy="35" rx="3" ry="5" />
+              <ellipse cx="65" cy="30" rx="3" ry="5" />
+            </svg>
+            {/* Bottom Left Branch */}
+            <svg className="absolute -bottom-20 -left-20 w-[500px] h-auto text-[#D4A373] -rotate-45" viewBox="0 0 100 100" fill="currentColor">
+              <path d="M90,20 C80,25 50,30 20,90 M50,55 L60,65 M45,60 L35,70 M35,75 L25,85 M70,40 C75,45 80,60 75,70 M30,55 C25,50 10,45 5,55 M55,30 C60,25 75,20 85,25 M20,75 C15,75 5,65 10,55" stroke="currentColor" strokeWidth="0.5" fill="none" />
+              <ellipse cx="75" cy="70" rx="4" ry="7" transform="rotate(20 75 70)" />
+              <ellipse cx="5" cy="55" rx="4" ry="7" transform="rotate(-20 5 55)" />
+              <ellipse cx="85" cy="25" rx="3" ry="6" transform="rotate(40 85 25)" />
+              <ellipse cx="10" cy="55" rx="4" ry="7" transform="rotate(-40 10 55)" />
+            </svg>
+            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4A373]/10 to-transparent" />
+         </div>
+
+         <div className="relative z-10 grid lg:grid-cols-12 gap-16 items-center">
+            <div className="lg:col-span-7 space-y-12 relative">
+               {/* In-Text Decorative Design: Coffee Branch & Leaf Motif (Subtle Version) */}
+               <div className="absolute inset-0 pointer-events-none overflow-hidden select-none opacity-[0.03] -z-10">
+                  <svg className="absolute -top-10 -left-10 w-[400px] h-auto text-[#D4A373] rotate-12" viewBox="0 0 100 100" fill="currentColor">
+                    <path d="M10,80 C20,75 50,70 80,10 M50,45 L40,35 M55,40 L65,30 M65,25 L75,15 M30,60 C25,55 20,40 25,30 M70,45 C75,50 90,55 95,45 M45,70 C40,75 25,80 15,75 M80,25 C85,25 95,35 90,45" stroke="currentColor" strokeWidth="0.2" fill="none" />
+                    <ellipse cx="25" cy="30" rx="4" ry="7" transform="rotate(-20 25 30)" />
+                    <ellipse cx="95" cy="45" rx="4" ry="7" transform="rotate(20 95 45)" />
+                  </svg>
+                  <svg className="absolute -bottom-10 right-10 w-[300px] h-auto text-[#D4A373] -rotate-45" viewBox="0 0 100 100" fill="currentColor">
+                    <path d="M90,20 C80,25 50,30 20,90 M50,55 L60,65 M45,60 L35,70" stroke="currentColor" strokeWidth="0.2" fill="none" />
+                    <ellipse cx="75" cy="70" rx="4" ry="7" transform="rotate(20 75 70)" />
+                  </svg>
+               </div>
+
+               <div className="space-y-6">
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 0.4 }}
+                    className="text-[10px] uppercase tracking-[0.6em] font-black"
+                  >
+                    Chapter II: The Roasting Alchemy
+                  </motion.span>
+                  <h2 className="text-6xl md:text-8xl font-playfair leading-[1.1]">The <span className="italic text-[#D4A373]">Midnight</span> <br/> Revelation.</h2>
+               </div>
+
+               <div className="space-y-8 max-w-2xl">
+                  <p className="text-xl md:text-2xl font-playfair italic font-light leading-relaxed text-[#FDF8F5]/80">
+                    "In the frost-bitten winters of 1994, under the amber glow of a solitary streetlamp in London, our founder discovered the secret of the mid-night crack."
+                  </p>
+                  <div className="space-y-6 opacity-60 text-sm md:text-base leading-relaxed font-light">
+                     <p>
+                        LEGEND SPEAKS of a roasting profile so elusive, it could only be achieved when the city fell silent. We spent three thousand nights experimenting with thermal currents and humidity, chasing a flavor that felt like a symphony in a cup. 
+                     </p>
+                     <p>
+                        Today, Brewed Craft is the living archive of those experiments. Every bean we roast undergoes a cinematic journey—from the volcanic soils of distant highlands to our artisan roastery—preserving a legacy of precision that borders on the obsessive.
+                     </p>
+                  </div>
+               </div>
+
+               <button className="group flex items-center gap-4 text-[10px] uppercase tracking-[0.4em] font-black hover:text-[#D4A373] transition-colors">
+                  Read The Full Archive <div className="h-[1px] w-12 bg-[#D4A373] group-hover:w-20 transition-all duration-700" />
+               </button>
+            </div>
+
+            <div className="lg:col-span-5 relative">
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.9 }}
+                 whileInView={{ opacity: 1, scale: 1 }}
+                 className="relative h-[600px] w-full rounded-[40px] overflow-hidden border border-white/5 shadow-3xl"
+               >
+                  <Image src="/interior.png" fill alt="Roastery Archive" className="object-cover sepia-[0.3] brightness-[0.7]" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1A0F0A]" />
+                  <div className="absolute bottom-12 left-12 right-12 space-y-4">
+                     <Utensils className="text-[#D4A373] w-8 h-8" />
+                     <h4 className="text-2xl font-playfair italic">The Roastery Atelier, <br/> London 1994</h4>
+                  </div>
+               </motion.div>
+               {/* Floating Seal */}
+               <motion.div 
+                 animate={{ rotate: 360 }}
+                 transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                 className="absolute -top-10 -right-10 w-32 h-32 border border-white/10 rounded-full flex items-center justify-center backdrop-blur-xl"
+               >
+                  <Sparkles className="text-[#D4A373] w-6 h-6" />
+               </motion.div>
+            </div>
+         </div>
+      </Section>
+
       {/* Final Sensory Section */}
       <Section id="contact" className="bg-[#3D4A3A] text-[#FDF8F5] !py-12 md:!py-32">
          <div className="grid lg:grid-cols-2 gap-16 lg:gap-32 items-center">
@@ -445,35 +606,125 @@ export default function LandingPage() {
          </div>
       </Section>
 
-      {/* Testimonials Collective (Relocated) */}
-      <Section className="bg-[#2C1810] text-[#FDF8F5] !py-32 border-y border-white/5">
-         <div className="max-w-7xl mx-auto space-y-16">
-            <div className="text-center space-y-4">
-               <h3 className="text-4xl md:text-5xl font-playfair font-bold">The Collective Voice</h3>
-               <div className="w-12 h-[1px] bg-[#D4A373] mx-auto opacity-40" />
+      {/* Testimonials Collective & Review Pad (Optimized Spacing) */}
+      <Section className="bg-[#FDF8F5] text-[#1A0F0A] !py-12 border-t border-[#D4A373]/20 relative">
+         <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-20 items-start">
+            
+            {/* Left: Review Writing Pad (Downsized) */}
+            <div className="lg:col-span-5 space-y-10 sticky top-32">
+               <div className="space-y-4">
+                  <span className="text-[#D4A373] uppercase tracking-[0.4em] text-[10px] font-black">Share Your Voice</span>
+                  <h3 className="text-3xl md:text-4xl font-playfair font-bold">The Roasting <br/> Journal.</h3>
+                  <p className="opacity-60 text-xs font-light leading-relaxed max-w-xs">
+                     Every palette tells a story. Share your experience with our artisanal blends and curated gastronomy.
+                  </p>
+               </div>
+
+               <div className="bg-white p-6 md:p-8 rounded-[30px] shadow-2xl border border-[#D4A373]/10 space-y-6">
+                  <div className="space-y-3">
+                     <label className="text-[8px] uppercase tracking-widest opacity-40 font-bold">Your Identity</label>
+                     <input 
+                       value={newReview.name}
+                       onChange={(e) => setNewReview({...newReview, name: e.target.value})}
+                       type="text" 
+                       placeholder="NAME / CRITIC" 
+                       className="w-full bg-transparent border-b border-[#D4A373]/20 py-3 focus:border-[#D4A373] outline-none transition-all placeholder:text-[#1A0F0A]/20 text-xs font-bold tracking-widest uppercase" 
+                     />
+                  </div>
+                  <div className="space-y-3">
+                     <label className="text-[8px] uppercase tracking-widest opacity-40 font-bold">The Experience</label>
+                     <textarea 
+                       value={newReview.text}
+                       onChange={(e) => setNewReview({...newReview, text: e.target.value})}
+                       placeholder="TELL US ABOUT THE SENSES..." 
+                       rows={3}
+                       className="w-full bg-transparent border border-[#D4A373]/10 rounded-xl p-4 focus:border-[#D4A373] outline-none transition-all placeholder:text-[#1A0F0A]/20 text-xs italic font-playfair"
+                     />
+                  </div>
+                  <button 
+                    onClick={submitReview}
+                    className="w-full bg-[#1A0F0A] text-white py-4 rounded-full font-black uppercase tracking-[0.2em] text-[9px] hover:bg-[#D4A373] transition-all duration-700 shadow-xl flex items-center justify-center gap-2"
+                  >
+                    Publish to Collective <Sparkles className="w-3 h-3" />
+                  </button>
+               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-               {[
-                 { name: "Julian Thorne", role: "Gastronomy Critic", text: "The Wagyu burger is a masterclass in balance. I've travelled the world, but the precision here is simply unmatched." },
-                 { name: "Elara Vance", role: "Vogue Collective", text: "A multi-sensory haven. From the velvet texture of the latte to the cinematic lighting, it's architectural artistry on a plate." },
-                 { name: "Marcus Reid", role: "Roastery Artisan", text: "The bean sourcing profile here is better than most boutique ateliers in Milan. Truly gold-standard craftsmanship." }
-               ].map((review, i) => (
-                 <motion.div 
-                   key={i}
-                   initial={{ opacity: 0, y: 20 }}
-                   whileInView={{ opacity: 1, y: 0 }}
-                   transition={{ delay: i * 0.1 }}
-                   className="bg-white/5 p-10 rounded-[40px] border border-white/5 space-y-8 flex flex-col justify-between hover:bg-white/[0.08] transition-all duration-700 group cursor-default"
-                 >
-                    <Utensils className="text-[#D4A373] w-6 h-6 opacity-20 group-hover:opacity-100 transition-opacity" />
-                    <p className="text-sm md:text-base font-playfair italic leading-relaxed opacity-60 group-hover:opacity-100 transition-opacity">"{review.text}"</p>
-                    <div className="space-y-2">
-                       <h5 className="font-bold uppercase tracking-widest text-[10px]">{review.name}</h5>
-                       <p className="text-[9px] opacity-30 uppercase tracking-[0.2em]">{review.role}</p>
-                    </div>
-                 </motion.div>
-               ))}
+            {/* Right: Stacked Cards Review Deck (Downsized) */}
+            <div className="lg:col-span-7 relative h-[500px] flex items-center justify-center pt-20">
+               {/* Deck Layout buttons (Smaller) */}
+               <div className="absolute top-0 right-0 flex gap-3 z-30">
+                  <button onClick={prevReview} className="bg-white p-4 rounded-2xl shadow-lg border border-[#D4A373]/20 hover:bg-[#D4A373] hover:text-white transition-all transform hover:scale-110">
+                     <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={nextReview} className="bg-[#1A0F0A] text-white p-4 rounded-2xl shadow-lg border border-white/10 hover:bg-[#D4A373] transition-all transform hover:scale-110">
+                     <ChevronRight className="w-5 h-5" />
+                  </button>
+               </div>
+
+               <div className="relative w-full h-full max-w-lg">
+                  {/* Delicate Floating Design in Blank Space */}
+                  <div className="absolute -bottom-10 -right-20 opacity-[0.05] pointer-events-none select-none z-0">
+                     <svg className="w-[400px] h-auto text-[#D4A373] rotate-[15deg]" viewBox="0 0 100 100" fill="currentColor">
+                        <path d="M10,90 C30,85 60,80 90,20 M50,55 L40,45 M55,50 L65,40 M65,35 L75,25 M30,70 C25,65 20,50 25,40" stroke="currentColor" strokeWidth="0.2" fill="none" />
+                        <ellipse cx="25" cy="40" rx="3" ry="6" transform="rotate(-20 25 40)" />
+                        <ellipse cx="90" cy="20" rx="4" ry="7" transform="rotate(20 90 20)" />
+                        <ellipse cx="40" cy="45" rx="2" ry="4" />
+                        <ellipse cx="65" cy="40" rx="2" ry="4" />
+                     </svg>
+                  </div>
+
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {reviews.map((review, i) => {
+                      const offset = (i - activeReviewIndex + reviews.length) % reviews.length;
+                      const isVisible = offset < 3; // Show only top 3 cards in the stack
+                      
+                      if (!isVisible) return null;
+
+                      return (
+                        <motion.div 
+                          key={review.name + i}
+                          initial={{ opacity: 0, x: 100 }}
+                          animate={{ 
+                            opacity: 1 - offset * 0.3, 
+                            x: offset * 30, 
+                            y: offset * -15,
+                            scale: 1 - offset * 0.05,
+                            rotate: offset * 1.5
+                          }}
+                          exit={{ opacity: 0, x: -150 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          style={{ zIndex: 50 - offset }}
+                          className="absolute inset-x-0 top-0 bg-white p-8 md:p-10 rounded-[40px] shadow-[0_20px_60px_rgba(212,163,115,0.12)] border border-[#D4A373]/10 h-[350px] flex flex-col justify-between cursor-pointer group"
+                        >
+                           <Utensils className="text-[#D4A373] w-8 h-8 opacity-30 group-hover:scale-110 transition-transform" />
+                           <div className="space-y-4">
+                              <p className="text-xl md:text-2xl font-playfair italic leading-relaxed text-[#1A0F0A] font-light">"{review.text}"</p>
+                              <div className="w-10 h-[1px] bg-[#D4A373] opacity-30" />
+                           </div>
+                           <div className="flex justify-between items-end">
+                              <div className="space-y-1">
+                                 <h5 className="font-bold uppercase tracking-[0.4em] text-[10px] text-[#1A0F0A]">{review.name}</h5>
+                                 <p className="text-[9px] opacity-40 uppercase tracking-[0.2em] font-medium">{review.role}</p>
+                              </div>
+                              <div className="flex gap-1 text-[#D4A373]">
+                                 {[...Array(5)].map((_, star) => (
+                                   <Sparkles key={star} className="w-2.5 h-2.5" />
+                                 ))}
+                              </div>
+                           </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+               </div>
+               
+               {/* Layout Legend */}
+               <div className="absolute bottom-0 right-0 flex items-center gap-4 text-[9px] uppercase tracking-[0.4em] font-black opacity-20">
+                  <span className="text-[#D4A373]">Archived Voices</span>
+                  <div className="w-12 h-[1px] bg-[#D4A373]" />
+                  <span>0{activeReviewIndex + 1} / 0{reviews.length}</span>
+               </div>
             </div>
          </div>
       </Section>
