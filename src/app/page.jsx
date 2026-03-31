@@ -446,7 +446,7 @@ export default function LandingPage() {
       </Section>
 
       {/* Testimonials Collective (Relocated) */}
-      <Section className="bg-[#1A0F0A] text-[#FDF8F5] !py-32 border-t border-white/5">
+      <Section className="bg-[#2C1810] text-[#FDF8F5] !py-32 border-y border-white/5">
          <div className="max-w-7xl mx-auto space-y-16">
             <div className="text-center space-y-4">
                <h3 className="text-4xl md:text-5xl font-playfair font-bold">The Collective Voice</h3>
@@ -479,9 +479,9 @@ export default function LandingPage() {
       </Section>
 
       <footer className="bg-[#1A0F0A] text-[#FDF8F5] pt-12 md:pt-32 pb-12 px-6 md:px-12 lg:px-24 border-t border-white/5 relative overflow-hidden">
-         {/* Background Subtle Logo Accent */}
-         <div className="absolute top-0 right-0 opacity-[0.02] pointer-events-none translate-x-1/4 -translate-y-1/4">
-            <h2 className="text-[20rem] font-black leading-none uppercase select-none">BREWED</h2>
+         {/* Background Subtle Full Logo Accent (Optimized for Visibility) */}
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none whitespace-nowrap">
+            <h2 className="text-[7rem] md:text-[14rem] lg:text-[20rem] font-black leading-none uppercase select-none tracking-tighter">BREWEDCRAFT</h2>
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-8 mb-24 relative z-10">
@@ -524,8 +524,8 @@ export default function LandingPage() {
                <h4 className="text-[11px] uppercase tracking-[0.4em] font-black text-[#3D4A3A]">Sanctuary Schedule</h4>
                <div className="space-y-4 text-[11px] md:text-xs">
                   {[
-                    { day: 'Mon - Fri', hours: '07:00 — 22:00' },
-                    { day: 'Sat - Sun', hours: '08:00 — 23:00' }
+                    { day: 'Mon - Sat', hours: '10:00 — 20:00' },
+                    { day: 'Sunday', hours: 'CLOSED' }
                   ].map((row) => (
                     <div key={row.day} className="flex flex-col md:flex-row md:justify-between items-center md:items-start border-b border-white/5 pb-3 gap-1 md:gap-0">
                        <span className="opacity-40 uppercase tracking-widest">{row.day}</span>
