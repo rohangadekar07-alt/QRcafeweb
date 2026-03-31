@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FDF8F5; /* Creamy white for clean slate */
+  --foreground: #2C1810; /* Deep Roast Coffee */
+  --accent: #D4A373;     /* Rich Caramel */
+  --accent-secondary: #3D4A3A; /* Forest Green for Culinary Freshness */
+  --muted: #E6CCB2;      /* Latte Cream */
+  --dark: #1A0F0A;       /* Espresso */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1A0F0A;
+    --foreground: #FDF8F5;
+    --accent: #E6CCB2;
+    --muted: #2C1810;
+    --dark: #000000;
+  }
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  overflow-x: hidden;
+}
+
+.coffee-gradient {
+  background: linear-gradient(135deg, #2C1810 0%, #1A0F0A 100%);
+}
+
+.text-gold {
+  color: #D4A373;
+}
+
+.bg-coffee {
+  background-color: #2C1810;
+}
+
+.border-coffee {
+  border-color: #D4A373;
+}
+
+/* Custom transitions */
+.transition-luxury {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.parallax-container {
+  overflow: hidden;
+}
+
+.parallax-bg {
+  transform: translateY(0);
+}
