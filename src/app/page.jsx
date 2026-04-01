@@ -53,10 +53,10 @@ export default function LandingPage() {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
 
-    const sections = ["home", "story", "culinary", "menu", "contact"];
+    const sections = ["home", "story", "culinary", "menu", "gallery", "contact", "reviews"];
     const observerOptions = {
         root: null,
-        rootMargin: '-20% 0px -60% 0px', // Detects section when it occupies the upper-middle part of the viewport
+        rootMargin: '-40% 0px -40% 0px', 
         threshold: 0
     };
 
@@ -104,7 +104,7 @@ export default function LandingPage() {
             { id: "story", label: "Our Story" },
             { id: "culinary", label: "Gastronomy" },
             { id: "menu", label: "The Library" },
-            { id: "contact", label: "Reservations" }
+            { id: "gallery", label: "Sanctuary" }
           ].map((nav) => (
             <a 
               key={nav.id} 
@@ -123,8 +123,14 @@ export default function LandingPage() {
         </div>
 
         <div className="flex gap-4 items-center">
-           <button className="hidden lg:block text-[10px] uppercase tracking-[0.3em] font-black opacity-40 hover:opacity-100 transition-opacity">
-             Our Story
+           <button 
+             onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
+             className="hidden lg:block text-[10px] uppercase tracking-[0.4em] font-black group px-2 py-1"
+           >
+             <div className="flex items-center gap-2 transition-all duration-500">
+               <div className={`w-1 h-1 bg-[#D4A373] rounded-full transition-all duration-700 ${activeSection === "reviews" ? "scale-100 opacity-100 animate-pulse shadow-[0_0_8px_#D4A373]" : "scale-0 opacity-0"}`} />
+               <span className={`transition-all duration-500 ${activeSection === "reviews" ? "text-[#D4A373]" : "opacity-40 group-hover:opacity-100"}`}>Journal</span>
+             </div>
            </button>
            <button 
              onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
@@ -174,7 +180,8 @@ export default function LandingPage() {
                 { id: "story", label: "Our Story" },
                 { id: "culinary", label: "Gastronomy" },
                 { id: "menu", label: "The Library" },
-                { id: "contact", label: "Reservations" }
+                { id: "gallery", label: "Sanctuary" },
+                { id: "reviews", label: "Journal" }
               ].map((nav) => (
                 <a 
                   key={nav.id}
@@ -435,7 +442,7 @@ export default function LandingPage() {
       </Section>
 
       {/* The Visual Sanctuary (Horizontal Section) */}
-      <section className="py-10 md:py-32 bg-[#FDF8F5] overflow-hidden">
+      <section id="gallery" className="py-10 md:py-32 bg-[#FDF8F5] overflow-hidden">
          <div className="flex w-max animate-infinite-scroll hover:[animation-play-state:paused] group">
             {[...Array(2)].map((_, arrayIndex) => (
                <div key={arrayIndex} className="flex gap-4 md:gap-8 px-2 md:px-4" aria-hidden={arrayIndex === 1 ? "true" : "false"}>
@@ -449,100 +456,6 @@ export default function LandingPage() {
          </div>
       </section>
 
-      {/* The Alchemist's Tale (Imaginative Story Section) */}
-      <Section id="story-archive" className="bg-[#1A0F0A] text-[#FDF8F5] !py-32 relative overflow-hidden">
-         {/* Background Decorative Design: Coffee Branch & Leaf Motif */}
-         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none opacity-[0.03]">
-            {/* Top Right Branch */}
-            <svg className="absolute -top-10 -right-20 w-[600px] h-auto text-[#D4A373] rotate-12" viewBox="0 0 100 100" fill="currentColor">
-              <path d="M10,80 C20,75 50,70 80,10 M50,45 L40,35 M55,40 L65,30 M65,25 L75,15 M30,60 C25,55 20,40 25,30 M70,45 C75,50 90,55 95,45 M45,70 C40,75 25,80 15,75 M80,25 C85,25 95,35 90,45" stroke="currentColor" strokeWidth="0.5" fill="none" />
-              <ellipse cx="25" cy="30" rx="4" ry="7" transform="rotate(-20 25 30)" />
-              <ellipse cx="95" cy="45" rx="4" ry="7" transform="rotate(20 95 45)" />
-              <ellipse cx="15" cy="75" rx="3" ry="6" transform="rotate(-40 15 75)" />
-              <ellipse cx="90" cy="45" rx="4" ry="7" transform="rotate(40 90 45)" />
-              <ellipse cx="40" cy="35" rx="3" ry="5" />
-              <ellipse cx="65" cy="30" rx="3" ry="5" />
-            </svg>
-            {/* Bottom Left Branch */}
-            <svg className="absolute -bottom-20 -left-20 w-[500px] h-auto text-[#D4A373] -rotate-45" viewBox="0 0 100 100" fill="currentColor">
-              <path d="M90,20 C80,25 50,30 20,90 M50,55 L60,65 M45,60 L35,70 M35,75 L25,85 M70,40 C75,45 80,60 75,70 M30,55 C25,50 10,45 5,55 M55,30 C60,25 75,20 85,25 M20,75 C15,75 5,65 10,55" stroke="currentColor" strokeWidth="0.5" fill="none" />
-              <ellipse cx="75" cy="70" rx="4" ry="7" transform="rotate(20 75 70)" />
-              <ellipse cx="5" cy="55" rx="4" ry="7" transform="rotate(-20 5 55)" />
-              <ellipse cx="85" cy="25" rx="3" ry="6" transform="rotate(40 85 25)" />
-              <ellipse cx="10" cy="55" rx="4" ry="7" transform="rotate(-40 10 55)" />
-            </svg>
-            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4A373]/10 to-transparent" />
-         </div>
-
-         <div className="relative z-10 grid lg:grid-cols-12 gap-16 items-center">
-            <div className="lg:col-span-7 space-y-12 relative">
-               {/* In-Text Decorative Design: Coffee Branch & Leaf Motif (Subtle Version) */}
-               <div className="absolute inset-0 pointer-events-none overflow-hidden select-none opacity-[0.03] -z-10">
-                  <svg className="absolute -top-10 -left-10 w-[400px] h-auto text-[#D4A373] rotate-12" viewBox="0 0 100 100" fill="currentColor">
-                    <path d="M10,80 C20,75 50,70 80,10 M50,45 L40,35 M55,40 L65,30 M65,25 L75,15 M30,60 C25,55 20,40 25,30 M70,45 C75,50 90,55 95,45 M45,70 C40,75 25,80 15,75 M80,25 C85,25 95,35 90,45" stroke="currentColor" strokeWidth="0.2" fill="none" />
-                    <ellipse cx="25" cy="30" rx="4" ry="7" transform="rotate(-20 25 30)" />
-                    <ellipse cx="95" cy="45" rx="4" ry="7" transform="rotate(20 95 45)" />
-                  </svg>
-                  <svg className="absolute -bottom-10 right-10 w-[300px] h-auto text-[#D4A373] -rotate-45" viewBox="0 0 100 100" fill="currentColor">
-                    <path d="M90,20 C80,25 50,30 20,90 M50,55 L60,65 M45,60 L35,70" stroke="currentColor" strokeWidth="0.2" fill="none" />
-                    <ellipse cx="75" cy="70" rx="4" ry="7" transform="rotate(20 75 70)" />
-                  </svg>
-               </div>
-
-               <div className="space-y-6">
-                  <motion.span 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 0.4 }}
-                    className="text-[10px] uppercase tracking-[0.6em] font-black"
-                  >
-                    Chapter II: The Roasting Alchemy
-                  </motion.span>
-                  <h2 className="text-6xl md:text-8xl font-playfair leading-[1.1]">The <span className="italic text-[#D4A373]">Midnight</span> <br/> Revelation.</h2>
-               </div>
-
-               <div className="space-y-8 max-w-2xl">
-                  <p className="text-xl md:text-2xl font-playfair italic font-light leading-relaxed text-[#FDF8F5]/80">
-                    "In the frost-bitten winters of 1994, under the amber glow of a solitary streetlamp in London, our founder discovered the secret of the mid-night crack."
-                  </p>
-                  <div className="space-y-6 opacity-60 text-sm md:text-base leading-relaxed font-light">
-                     <p>
-                        LEGEND SPEAKS of a roasting profile so elusive, it could only be achieved when the city fell silent. We spent three thousand nights experimenting with thermal currents and humidity, chasing a flavor that felt like a symphony in a cup. 
-                     </p>
-                     <p>
-                        Today, Brewed Craft is the living archive of those experiments. Every bean we roast undergoes a cinematic journey—from the volcanic soils of distant highlands to our artisan roastery—preserving a legacy of precision that borders on the obsessive.
-                     </p>
-                  </div>
-               </div>
-
-               <button className="group flex items-center gap-4 text-[10px] uppercase tracking-[0.4em] font-black hover:text-[#D4A373] transition-colors">
-                  Read The Full Archive <div className="h-[1px] w-12 bg-[#D4A373] group-hover:w-20 transition-all duration-700" />
-               </button>
-            </div>
-
-            <div className="lg:col-span-5 relative">
-               <motion.div 
-                 initial={{ opacity: 0, scale: 0.9 }}
-                 whileInView={{ opacity: 1, scale: 1 }}
-                 className="relative h-[600px] w-full rounded-[40px] overflow-hidden border border-white/5 shadow-3xl"
-               >
-                  <Image src="/interior.png" fill alt="Roastery Archive" className="object-cover sepia-[0.3] brightness-[0.7]" />
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1A0F0A]" />
-                  <div className="absolute bottom-12 left-12 right-12 space-y-4">
-                     <Utensils className="text-[#D4A373] w-8 h-8" />
-                     <h4 className="text-2xl font-playfair italic">The Roastery Atelier, <br/> London 1994</h4>
-                  </div>
-               </motion.div>
-               {/* Floating Seal */}
-               <motion.div 
-                 animate={{ rotate: 360 }}
-                 transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                 className="absolute -top-10 -right-10 w-32 h-32 border border-white/10 rounded-full flex items-center justify-center backdrop-blur-xl"
-               >
-                  <Sparkles className="text-[#D4A373] w-6 h-6" />
-               </motion.div>
-            </div>
-         </div>
-      </Section>
 
       {/* Final Sensory Section */}
       <Section id="contact" className="bg-[#3D4A3A] text-[#FDF8F5] !py-12 md:!py-32">
@@ -607,7 +520,7 @@ export default function LandingPage() {
       </Section>
 
       {/* Testimonials Collective & Review Pad (Optimized Spacing) */}
-      <Section className="bg-[#FDF8F5] text-[#1A0F0A] !py-12 border-t border-[#D4A373]/20 relative">
+      <Section id="reviews" className="bg-[#FDF8F5] text-[#1A0F0A] !py-12 border-t border-[#D4A373]/20 relative">
          <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-20 items-start">
             
             {/* Left: Review Writing Pad (Downsized) */}
@@ -761,7 +674,7 @@ export default function LandingPage() {
             <div className="lg:col-span-2 space-y-8 text-center md:text-left">
                <h4 className="text-[11px] uppercase tracking-[0.4em] font-black text-[#D4A373]">Selection</h4>
                <ul className="space-y-4 text-xs md:text-sm font-medium opacity-50">
-                  {['the atelier', 'culinary art', 'the library', 'reservations'].map((item) => (
+                  {['the atelier', 'gastronomy', 'the library', 'the sanctuary', 'the journal'].map((item) => (
                     <li key={item} className="hover:opacity-100 hover:text-[#D4A373] transition-all cursor-pointer group flex items-center justify-center md:justify-start gap-2">
                        <span className="w-0 group-hover:w-4 h-[1px] bg-[#D4A373] transition-all" />
                        <span className="capitalize">{item}</span>
