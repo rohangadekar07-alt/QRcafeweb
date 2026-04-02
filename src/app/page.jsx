@@ -1,7 +1,7 @@
 "use client";
 import { Section } from "@/components/Section";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Coffee, MapPin, Phone, Instagram, Facebook, Utensils, Wheat, Sparkles, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Coffee, MapPin, Phone, Instagram, Facebook, Utensils, Wheat, Sparkles, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
@@ -228,6 +228,69 @@ export default function LandingPage() {
             priority
           />
         </motion.div>
+
+        {/* ── Animated Smoke Rising from Coffee Cup ── */}
+        <div style={{
+          position: 'absolute',
+          bottom: '16%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 6,
+          pointerEvents: 'none',
+          width: '220px',
+          height: '560px',
+        }}>
+          <motion.div style={{ opacity: heroOpacity }} className="relative w-full h-full">
+            {/* Wisp A — drifts left */}
+            <span style={{
+              position: 'absolute', bottom: 0, left: '50%',
+              width: '18px', height: '18px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.80) 0%, rgba(220,210,200,0.4) 50%, transparent 80%)',
+              filter: 'blur(5px)',
+              animation: 'smokeA 3.2s ease-out infinite',
+            }} />
+            {/* Wisp B — drifts right */}
+            <span style={{
+              position: 'absolute', bottom: 0, left: '50%',
+              width: '22px', height: '22px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.75) 0%, rgba(230,215,200,0.35) 50%, transparent 80%)',
+              filter: 'blur(7px)',
+              animation: 'smokeB 3.8s ease-out 0.7s infinite',
+            }} />
+            {/* Wisp C — center, tallest */}
+            <span style={{
+              position: 'absolute', bottom: 0, left: '50%',
+              width: '28px', height: '28px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.70) 0%, rgba(215,205,195,0.30) 50%, transparent 80%)',
+              filter: 'blur(9px)',
+              animation: 'smokeC 4.4s ease-out 1.4s infinite',
+            }} />
+            {/* Wisp D — wide airy puff */}
+            <span style={{
+              position: 'absolute', bottom: 0, left: '50%',
+              width: '34px', height: '34px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(210,200,190,0.22) 50%, transparent 80%)',
+              filter: 'blur(13px)',
+              animation: 'smokeD 5.0s ease-out 2.1s infinite',
+            }} />
+            {/* Wisp E — thin quick wisp */}
+            <span style={{
+              position: 'absolute', bottom: 0, left: '50%',
+              width: '14px', height: '14px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(240,230,220,0.40) 50%, transparent 80%)',
+              filter: 'blur(4px)',
+              animation: 'smokeE 2.8s ease-out 0.3s infinite',
+            }} />
+            {/* Wisp F — slow big cloud */}
+            <span style={{
+              position: 'absolute', bottom: 0, left: '50%',
+              width: '40px', height: '40px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(200,195,185,0.18) 50%, transparent 80%)',
+              filter: 'blur(16px)',
+              animation: 'smokeF 6.0s ease-out 3.0s infinite',
+            }} />
+          </motion.div>
+        </div>
         
         <div className="relative z-10 text-center text-[#FDF8F5] space-y-12 max-w-5xl">
           <motion.h1 
@@ -673,7 +736,7 @@ export default function LandingPage() {
             {/* Navigation Column */}
             <div className="lg:col-span-2 space-y-8 text-center md:text-left">
                <h4 className="text-[11px] uppercase tracking-[0.4em] font-black text-[#D4A373]">Selection</h4>
-               <ul className="space-y-4 text-xs md:text-sm font-medium opacity-50">
+               <ul className="space-y-4 text-xs md:text-sm font-medium opacity-50 mb-8">
                   {['the atelier', 'gastronomy', 'the library', 'the sanctuary', 'the journal'].map((item) => (
                     <li key={item} className="hover:opacity-100 hover:text-[#D4A373] transition-all cursor-pointer group flex items-center justify-center md:justify-start gap-2">
                        <span className="w-0 group-hover:w-4 h-[1px] bg-[#D4A373] transition-all" />
@@ -681,6 +744,12 @@ export default function LandingPage() {
                     </li>
                   ))}
                </ul>
+               <Link 
+                 href="/login" 
+                 className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-6 py-3 rounded-full text-[9px] uppercase tracking-[0.3em] font-black hover:bg-[#D4A373] hover:text-[#1A0F0A] transition-all duration-500 group"
+               >
+                 Staff Login <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+               </Link>
             </div>
 
             {/* Hours Column */}

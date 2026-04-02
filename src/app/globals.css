@@ -59,3 +59,74 @@ body {
 .parallax-bg {
   transform: translateY(0);
 }
+
+/* ── Water Wave Animations ── */
+@keyframes wave-flow-1 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes wave-flow-2 {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+@keyframes wave-flow-3 {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.wave-1 {
+  animation: wave-flow-1 7s linear infinite;
+}
+.wave-2 {
+  animation: wave-flow-2 10s linear infinite;
+}
+.wave-3 {
+  animation: wave-flow-3 13s linear infinite;
+}
+
+/* ── Animated Coffee Smoke Wisps (smokeA–F) ── */
+
+@keyframes smokeA {
+  0%   { transform: translateX(-50%) translateY(0px) scale(1);    opacity: 0; }
+  10%  { opacity: 0.9; }
+  50%  { transform: translateX(calc(-50% - 22px)) translateY(-200px) scale(3);   opacity: 0.55; }
+  100% { transform: translateX(calc(-50% - 40px)) translateY(-450px) scale(5.5); opacity: 0; }
+}
+
+@keyframes smokeB {
+  0%   { transform: translateX(-50%) translateY(0px) scale(1);    opacity: 0; }
+  12%  { opacity: 0.85; }
+  55%  { transform: translateX(calc(-50% + 28px)) translateY(-180px) scale(3.5); opacity: 0.5; }
+  100% { transform: translateX(calc(-50% + 50px)) translateY(-440px) scale(6);   opacity: 0; }
+}
+
+@keyframes smokeC {
+  0%   { transform: translateX(-50%) translateY(0px) scale(1);    opacity: 0; }
+  10%  { opacity: 0.80; }
+  45%  { transform: translateX(calc(-50% - 10px)) translateY(-220px) scale(4);   opacity: 0.45; }
+  100% { transform: translateX(calc(-50% + 8px))  translateY(-500px) scale(7);   opacity: 0; }
+}
+
+@keyframes smokeD {
+  0%   { transform: translateX(-50%) translateY(0px) scale(1);    opacity: 0; }
+  18%  { opacity: 0.70; }
+  55%  { transform: translateX(calc(-50% + 18px)) translateY(-195px) scale(4.5); opacity: 0.38; }
+  100% { transform: translateX(calc(-50% - 12px)) translateY(-460px) scale(7.5); opacity: 0; }
+}
+
+@keyframes smokeE {
+  0%   { transform: translateX(-50%) translateY(0px) scale(1);    opacity: 0; }
+  8%   { opacity: 0.95; }
+  40%  { transform: translateX(calc(-50% + 6px))  translateY(-160px) scale(2.5); opacity: 0.6; }
+  100% { transform: translateX(calc(-50% - 25px)) translateY(-400px) scale(4.5); opacity: 0; }
+}
+
+@keyframes smokeF {
+  0%   { transform: translateX(-50%) translateY(0px) scale(1);    opacity: 0; }
+  20%  { opacity: 0.60; }
+  60%  { transform: translateX(calc(-50% + 10px)) translateY(-210px) scale(5);   opacity: 0.30; }
+  100% { transform: translateX(calc(-50% - 5px))  translateY(-490px) scale(8.5); opacity: 0; }
+}
+
+/* ── Auto-scroll gallery ── */
+
