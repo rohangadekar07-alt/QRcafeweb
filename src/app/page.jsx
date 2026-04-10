@@ -4,7 +4,8 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { Coffee, MapPin, Phone, Instagram, Facebook, Utensils, Wheat, Sparkles, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 const menuItems = {
   coffee: [
@@ -20,6 +21,17 @@ const menuItems = {
 };
 
 export default function LandingPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LandingContent />
+    </Suspense>
+  );
+}
+
+function LandingContent() {
+  const searchParams = useSearchParams();
+  const tableId = searchParams.get("table");
+  
   const [activeTab, setActiveTab] = useState("coffee");
   const [activeSection, setActiveSection] = useState("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -86,7 +98,7 @@ export default function LandingPage() {
   return (
     <main className="relative min-h-screen bg-[#FDF8F5] text-[#2C1810]">
       {/* Dynamic Navbar */}
-      <nav className={`fixed top-0 w-full z-[100] px-6 py-5 md:px-12 flex justify-between items-center transition-all duration-700 ${
+      <nav className={`fixed top-0 w-full z-[100] px-6 py-5 md:px-12 flex justify-between items-center gap-12 transition-all duration-700 ${
         isScrolled 
           ? "bg-[#FDF8F5]/40 backdrop-blur-3xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]" 
           : "bg-transparent border-transparent"
@@ -98,7 +110,7 @@ export default function LandingPage() {
           </div>
         </div>
         
-        <div className="hidden lg:flex gap-8 text-[10px] uppercase tracking-[0.4em] font-black">
+        <div className="hidden lg:flex gap-12 text-[10px] uppercase tracking-[0.4em] font-black">
           {[
             { id: "home", label: "The Atelier" },
             { id: "story", label: "Our Story" },
@@ -125,12 +137,13 @@ export default function LandingPage() {
         <div className="flex gap-4 items-center">
            <button 
              onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
-             className="hidden lg:block text-[10px] uppercase tracking-[0.4em] font-black group px-2 py-1"
+             className={`hidden lg:block text-[10px] uppercase tracking-[0.4em] font-black group px-2 py-1 relative transition-all duration-500 ${activeSection === "reviews" ? "text-[#D4A373]" : "text-[#2C1810]"}`}
            >
-             <div className="flex items-center gap-2 transition-all duration-500">
+             <div className="flex items-center gap-2">
                <div className={`w-1 h-1 bg-[#D4A373] rounded-full transition-all duration-700 ${activeSection === "reviews" ? "scale-100 opacity-100 animate-pulse shadow-[0_0_8px_#D4A373]" : "scale-0 opacity-0"}`} />
-               <span className={`transition-all duration-500 ${activeSection === "reviews" ? "text-[#D4A373]" : "opacity-40 group-hover:opacity-100"}`}>Journal</span>
+               <span className={`font-black transition-all duration-500 ${activeSection !== "reviews" ? "group-hover:text-[#3D4A3A]" : ""}`}>Journal</span>
              </div>
+             <span className={`absolute -bottom-2 left-1/2 -translate-x-1/2 h-[2px] bg-[#D4A373] transition-all duration-500 ${activeSection === "reviews" ? "w-full" : "w-0 group-hover:w-full"}`} />
            </button>
            <button 
              onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
@@ -318,7 +331,7 @@ export default function LandingPage() {
             transition={{ duration: 1, delay: 1 }}
             className="flex flex-col md:flex-row gap-8 justify-center pt-12"
           >
-            <Link href="/menu" className="bg-[#D4A373] text-[#1A0F0A] px-12 py-5 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-[#FDF8F5] transition-all duration-700 shadow-2xl group flex items-center justify-center gap-2">
+            <Link href={`/menu${tableId ? `?table=${tableId}` : ""}`} className="bg-[#D4A373] text-[#1A0F0A] px-12 py-5 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-[#FDF8F5] transition-all duration-700 shadow-2xl group flex items-center justify-center gap-2">
               Order Now <Sparkles className="w-3 h-3 group-hover:rotate-45 transition-transform" />
             </Link>
             <button className="bg-[#3D4A3A] text-[#FDF8F5] px-12 py-5 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-[#FDF8F5] hover:text-[#3D4A3A] transition-all duration-700 shadow-2xl">
@@ -705,13 +718,13 @@ export default function LandingPage() {
          </div>
       </Section>
 
-      <footer className="bg-[#1A0F0A] text-[#FDF8F5] pt-12 md:pt-32 pb-12 px-6 md:px-12 lg:px-24 border-t border-white/5 relative overflow-hidden">
+      <footer className="bg-[#1A0F0A] text-[#FDF8F5] pt-6 md:pt-12 pb-12 px-6 md:px-12 lg:px-24 border-t border-white/5 relative overflow-hidden">
          {/* Background Subtle Full Logo Accent (Optimized for Visibility) */}
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none whitespace-nowrap">
-            <h2 className="text-[7rem] md:text-[14rem] lg:text-[20rem] font-black leading-none uppercase select-none tracking-tighter">BREWEDCRAFT</h2>
+            <h2 className="text-[4rem] md:text-[8rem] lg:text-[12rem] font-black leading-none uppercase select-none tracking-tighter">BREWEDCRAFT</h2>
          </div>
 
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-8 mb-24 relative z-10">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-8 mb-0 relative z-10">
             {/* Brand Column */}
             <div className="lg:col-span-4 space-y-8 md:space-y-10 text-center md:text-left">
                <div className="flex items-center gap-3 justify-center md:justify-start group cursor-pointer">
@@ -744,12 +757,6 @@ export default function LandingPage() {
                     </li>
                   ))}
                </ul>
-               <Link 
-                 href="/login" 
-                 className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-6 py-3 rounded-full text-[9px] uppercase tracking-[0.3em] font-black hover:bg-[#D4A373] hover:text-[#1A0F0A] transition-all duration-500 group"
-               >
-                 Staff Login <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-               </Link>
             </div>
 
             {/* Hours Column */}
@@ -769,20 +776,16 @@ export default function LandingPage() {
                </div>
             </div>
 
-            {/* Newsletter Column */}
+            {/* Staff Login Column */}
             <div className="lg:col-span-3 space-y-8 text-center md:text-left">
-               <h4 className="text-[11px] uppercase tracking-[0.4em] font-black text-[#D4A373]">The Journal</h4>
-               <p className="text-xs opacity-50 font-medium leading-relaxed">Join our collective for seasonal menu releases and private event invitations.</p>
-               <div className="relative group max-w-sm mx-auto md:mx-0">
-                  <input 
-                    type="email" 
-                    placeholder="VOGUE@EMAIL.COM" 
-                    className="w-full bg-white/5 border border-white/10 rounded-full py-4 pl-6 pr-12 text-[10px] font-bold tracking-widest outline-none focus:border-[#D4A373]/50 focus:bg-white/10 transition-all text-white placeholder:opacity-20"
-                  />
-                  <button className="absolute right-2 top-1/2 -translate-y-1/2 p-3 text-[#D4A373] hover:translate-x-1 transition-transform bg-[#D4A373]/10 rounded-full">
-                     <Sparkles size={14} />
-                  </button>
-               </div>
+               <h4 className="text-[11px] uppercase tracking-[0.4em] font-black text-[#D4A373]">Staff Portal</h4>
+               <p className="text-xs opacity-50 font-medium leading-relaxed">Access the administrative and back-of-house management systems.</p>
+               <Link 
+                 href="/login" 
+                 className="inline-flex items-center gap-3 bg-white/5 border border-white/10 px-8 py-4 rounded-full text-[10px] font-bold tracking-[0.3em] uppercase hover:bg-[#D4A373] hover:text-[#1A0F0A] transition-all duration-500 group"
+               >
+                 Internal Login <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
+               </Link>
             </div>
          </div>
 

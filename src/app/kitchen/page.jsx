@@ -16,30 +16,68 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { getOrders, updateOrderStatus } from "@/utils/api";
+import { io } from "socket.io-client";
 
 export default function KitchenDashboard() {
-  const [orders, setOrders] = useState([
-    { id: "401", table: "02", items: ["Neapolitan Gold Pizza", "2x Bourbon Latte"], time: "12:10", status: "preparing", priority: "high" },
-    { id: "402", table: "05", items: ["Wagyu Heritage Burger", "Cold Brew Velvet"], time: "12:08", status: "preparing", priority: "normal" },
-    { id: "403", table: "01", items: ["Mushroom Gruyère Burger"], time: "12:05", status: "ready", priority: "normal" },
-    { id: "404", table: "03", items: ["Espresso Roman", "3x Juice Artisanal"], time: "12:15", status: "preparing", priority: "high" },
-  ]);
-
+  const [orders, setOrders] = useState([]);
   const [currentTime, setCurrentTime] = useState("");
 
   useEffect(() => {
+    const fetchRealOrders = async () => {
+      try {
+        const rawOrders = await getOrders();
+        // map backend orders to our frontend structure
+        const mappedOrders = rawOrders.map(o => ({
+            id: o._id.substring(o._id.length - 4),
+            dbId: o._id,
+            table: o.tableId,
+            items: o.items.map(i => `${i.qty}x ${i.name}`),
+            time: new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: o.status,
+            priority: "normal"
+        }));
+        setOrders(mappedOrders);
+      } catch (err) {
+        console.error("Failed to load orders:", err);
+      }
+    };
+    fetchRealOrders();
+
+    // Socket io logic
+    const socket = io("http://localhost:5000");
+    socket.on("new_order", (o) => {
+        const newMapped = {
+            id: o._id.substring(o._id.length - 4),
+            dbId: o._id,
+            table: o.tableId,
+            items: o.items.map(i => `${i.qty}x ${i.name}`),
+            time: new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: o.status,
+            priority: "high"
+        };
+        setOrders(prev => [newMapped, ...prev]);
+    });
+
     const interval = setInterval(() => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }, 1000);
-    return () => clearInterval(interval);
+    return () => {
+        clearInterval(interval);
+        socket.disconnect();
+    };
   }, []);
 
-  const completeOrder = (id) => {
-    setOrders(orders.map(order => 
-      order.id === id ? { ...order, status: "ready" } : order
-    ));
-    // In a real app, this would remove from active list after some time
+  const completeOrder = async (orderId, dbId) => {
+    try {
+        await updateOrderStatus(dbId, "completed");
+        setOrders(orders.map(order => 
+          order.dbId === dbId ? { ...order, status: "completed" } : order
+        ));
+    } catch(err) {
+        alert("Failed to update status: " + err.message);
+    }
   };
 
   return (
@@ -85,7 +123,7 @@ export default function KitchenDashboard() {
                 <div className="flex-1 min-w-[200px] bg-white/5 p-8 rounded-[30px] border border-white/5 flex flex-col justify-between group hover:bg-white/10 transition-all">
                     <CheckCircle2 className="w-6 h-6 text-[#3D4A3A] mb-6" />
                     <p className="text-[10px] uppercase tracking-[0.2em] opacity-40 font-black">Service Ready</p>
-                    <h3 className="text-4xl font-playfair font-black">{orders.filter(o => o.status === 'ready').length}</h3>
+                    <h3 className="text-4xl font-playfair font-black">{orders.filter(o => o.status === 'completed').length}</h3>
                 </div>
                 <div className="flex-1 min-w-[200px] bg-white/5 p-8 rounded-[30px] border border-white/5 flex flex-col justify-between group hover:bg-white/10 transition-all">
                     <Timer className="w-6 h-6 text-[#D4A373] mb-6" />
@@ -105,7 +143,7 @@ export default function KitchenDashboard() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             className={`relative rounded-[40px] p-8 md:p-10 border transition-all duration-700 min-h-[400px] flex flex-col justify-between group overflow-hidden ${
-                                order.status === "ready" 
+                                order.status === "completed" 
                                     ? "bg-[#3D4A3A]/20 border-[#3D4A3A]/40" 
                                     : order.priority === "high"
                                         ? "bg-red-500/5 border-red-500/20"
@@ -113,7 +151,7 @@ export default function KitchenDashboard() {
                             }`}
                         >
                             {/* Priority Badge */}
-                            {order.priority === "high" && order.status !== "ready" && (
+                            {order.priority === "high" && order.status !== "completed" && (
                                 <div className="absolute top-6 right-6 bg-red-500 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">
                                     Priority
                                 </div>
@@ -150,21 +188,21 @@ export default function KitchenDashboard() {
                                         <Clock className="w-3 h-3" />
                                         <span>Ordered {order.time}</span>
                                     </div>
-                                    <div className={`px-4 py-1.5 rounded-full ${order.status === 'ready' ? "bg-[#3D4A3A] text-white" : "bg-white/5 opacity-50"}`}>
+                                    <div className={`px-4 py-1.5 rounded-full ${order.status === 'completed' ? "bg-[#3D4A3A] text-white" : "bg-white/5 opacity-50"}`}>
                                         {order.status}
                                     </div>
                                 </div>
 
                                 <button 
-                                    onClick={() => completeOrder(order.id)}
-                                    disabled={order.status === "ready"}
+                                    onClick={() => completeOrder(order.id, order.dbId)}
+                                    disabled={order.status === "completed"}
                                     className={`w-full py-5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-700 flex items-center justify-center gap-3 ${
-                                        order.status === "ready"
+                                        order.status === "completed"
                                             ? "bg-transparent border border-white/10 text-white/20"
                                             : "bg-[#D4A373] text-[#1A0F0A] hover:bg-[#FDF8F5] shadow-2xl"
                                     }`}
                                 >
-                                    {order.status === "ready" ? "Service Fulfilled" : "Mark as Culinary Art"} <ArrowRight className="w-4 h-4" />
+                                    {order.status === "completed" ? "Service Fulfilled" : "Mark as Culinary Art"} <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
 

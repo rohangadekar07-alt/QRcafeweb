@@ -4,19 +4,36 @@ import { ChefHat, LayoutDashboard, Eye, EyeOff, ArrowRight, Sparkles } from "luc
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { loginUser } from "@/utils/api";
 
 export default function LoginPage() {
   const [role, setRole] = useState("admin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      router.push(role === "admin" ? "/admin" : "/kitchen");
-    }, 1200);
+    try {
+      const data = await loginUser(email, password);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userRole", data.role);
+
+      if (data.role === "admin") {
+        router.push("/admin/dashboard");
+      } else if (data.role === "chef") {
+        router.push("/chef/dashboard");
+      } else {
+        router.push("/");
+      }
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -99,6 +116,8 @@ export default function LoginPage() {
               <input
                 required
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@brewedcraft.com"
                 className="w-full bg-white border border-[#1A0F0A]/10 rounded-xl px-4 py-3.5 text-sm text-[#1A0F0A] outline-none focus:border-[#D4A373] transition-colors placeholder:text-[#1A0F0A]/25"
               />
@@ -110,6 +129,8 @@ export default function LoginPage() {
                 <input
                   required
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full bg-white border border-[#1A0F0A]/10 rounded-xl px-4 py-3.5 pr-12 text-sm text-[#1A0F0A] outline-none focus:border-[#D4A373] transition-colors placeholder:text-[#1A0F0A]/25"
                 />

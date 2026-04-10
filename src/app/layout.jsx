@@ -23,6 +23,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${playfair.variable} ${inter.variable} scroll-smooth`}>
       <body className="font-inter antialiased">
         {children}
+        <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </body>
     </html>
   );

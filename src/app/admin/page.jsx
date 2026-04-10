@@ -15,13 +15,42 @@ import {
   ArrowUpRight,
   TrendingUp,
   CreditCard,
-  History
+  History,
+  Calendar,
+  Filter
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getOrders, getTables, generateTables, addMenuItem, deleteMenuItem, fetchMenu } from "@/utils/api";
+import { io } from "socket.io-client";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  
+  const [orders, setOrders] = useState([]);
+  const [tables, setTables] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterStatus, setFilterStatus] = useState("all");
+  
+  useEffect(() => {
+     const loadData = async () => {
+         try {
+            setOrders(await getOrders());
+            setTables(await getTables());
+            const m = await fetchMenu();
+            setMenuItems(m);
+         } catch(e) { console.error(e); }
+     };
+     loadData();
+     
+     const socket = io("http://localhost:5000");
+     socket.on("new_order", (o) => setOrders(prev => [o, ...prev]));
+     socket.on("order_updated", (o) => setOrders(prev => prev.map(p => p._id === o._id ? o : p)));
+     socket.on("order_completed", (o) => setOrders(prev => prev.map(p => p._id === o._id ? o : p)));
+     
+     return () => socket.disconnect();
+  }, []);
 
   const sidebarItems = [
     { id: "overview", label: "Overview", icon: BarChart3 },
@@ -96,8 +125,8 @@ export default function AdminDashboard() {
                 <button className="p-4 bg-white rounded-2xl shadow-sm border border-[#2C1810]/5 hover:bg-[#1A0F0A] hover:text-white transition-all">
                     <Bell className="w-5 h-5" />
                 </button>
-                <button className="bg-[#2C1810] text-[#FDF8F5] px-8 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#3D4A3A] transition-all flex items-center gap-3">
-                    <Plus className="w-4 h-4" /> New Table QR
+                <button onClick={async () => { await generateTables(); setTables(await getTables()); alert("Tables generated!"); }} className="bg-[#2C1810] text-[#FDF8F5] px-8 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#3D4A3A] transition-all flex items-center gap-3">
+                    <Plus className="w-4 h-4" /> Generate QR Tables
                 </button>
             </div>
         </header>
@@ -128,22 +157,80 @@ export default function AdminDashboard() {
         <div className="grid lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 bg-[#1A0F0A] rounded-[50px] p-12 text-[#FDF8F5] relative overflow-hidden group">
                 <div className="relative z-10 space-y-12 h-full flex flex-col justify-between">
-                    <div className="space-y-4">
-                        <h2 className="text-4xl font-playfair font-bold">Real-time Echoes</h2>
-                        <p className="text-sm opacity-50 font-playfair italic">Monitoring every sensory interaction in the atelier.</p>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="space-y-4">
+                            <h2 className="text-4xl font-playfair font-bold">Real-time Echoes</h2>
+                            <p className="text-sm opacity-50 font-playfair italic">Monitoring every sensory interaction in the atelier.</p>
+                        </div>
+                        
+                        {/* Live Date Selector */}
+                        <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-2 pl-4 rounded-2xl group/date hover:bg-white/10 transition-all">
+                            <Calendar className="w-4 h-4 text-[#D4A373]" />
+                            <input 
+                                type="date" 
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="bg-transparent text-[10px] uppercase tracking-[0.2em] font-black outline-none cursor-pointer [color-scheme:dark]"
+                            />
+                        </div>
                     </div>
                     
-                    <div className="space-y-6">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="flex items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all">
-                                <div className="w-12 h-12 bg-[#D4A373] rounded-full flex items-center justify-center text-[#1A0F0A] font-black shadow-xl">T{i}</div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#D4A373]">Table 0{i} Ordered</p>
-                                    <p className="text-sm font-playfair italic opacity-40">2x Bourbon Latte, 1x Wagyu Heritage</p>
-                                </div>
-                                <span className="text-[9px] opacity-20 uppercase font-black tracking-widest">{i*4}m ago</span>
-                            </div>
+                    <div className="flex gap-4">
+                        {["all", "pending", "preparing", "completed"].map(status => (
+                            <button 
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`text-[9px] uppercase tracking-[0.2em] font-black px-4 py-2 rounded-full transition-all ${
+                                    filterStatus === status ? "bg-[#D4A373] text-[#1A0F0A]" : "bg-white/5 text-white/40 hover:text-white"
+                                }`}
+                            >
+                                {status}
+                            </button>
                         ))}
+                    </div>
+                    
+                    <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+                        {orders
+                            .filter(o => {
+                                const orderDate = new Date(o.createdAt).toISOString().split('T')[0];
+                                const matchesDate = orderDate === selectedDate;
+                                const matchesStatus = filterStatus === "all" || o.status === filterStatus;
+                                return matchesDate && matchesStatus;
+                            })
+                            .map((o) => (
+                            <motion.div 
+                                layout
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                key={o._id} 
+                                className="flex items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all group/item"
+                            >
+                                <div className="w-14 h-14 bg-[#D4A373] rounded-2xl flex items-center justify-center text-[#1A0F0A] font-black shadow-xl text-xl">{o.tableId}</div>
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-md ${
+                                            o.status === "completed" ? "bg-green-500/20 text-green-400" : 
+                                            o.status === "preparing" ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400"
+                                        }`}>
+                                            {o.status}
+                                        </span>
+                                        <div className="w-1 h-1 bg-white/10 rounded-full" />
+                                        <span className="text-[9px] opacity-40 uppercase font-black tracking-widest">{new Date(o.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                    </div>
+                                    <p className="text-base font-playfair italic text-white/80">{o.items.map(i => `${i.qty}x ${i.name}`).join(", ")}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-[#D4A373]">${o.totalAmount || "0.00"}</p>
+                                    <p className="text-[8px] uppercase tracking-widest opacity-20 font-black">Verified</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                        {orders.filter(o => new Date(o.createdAt).toISOString().split('T')[0] === selectedDate).length === 0 && (
+                            <div className="py-20 text-center opacity-20">
+                                <History className="w-12 h-12 mx-auto mb-4" />
+                                <p className="text-[10px] uppercase tracking-[0.4em] font-black">No rituals recorded for this date</p>
+                            </div>
+                        )}
                     </div>
 
                     <button className="text-[10px] uppercase tracking-[0.4em] text-[#D4A373] font-black flex items-center gap-3 group/btn">
@@ -192,6 +279,49 @@ export default function AdminDashboard() {
                 </button>
             </div>
         </div>
+        
+        {/* Simple Tab Renders to bypass length limits */}
+        {activeTab === "tables" && (
+           <div className="mt-12 bg-white p-10 rounded-[40px] shadow-sm">
+               <h2 className="text-2xl font-playfair font-bold mb-6">Generated Tables & QR Codes</h2>
+               <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                  {tables.map(t => (
+                      <div key={t._id} className="p-4 border rounded-2xl flex flex-col items-center">
+                          <span className="font-bold text-lg mb-2">{t.tableId}</span>
+                          <img src={t.qrCodeUrl} alt="QR" className="w-24 h-24 rounded-lg" />
+                      </div>
+                  ))}
+               </div>
+           </div>
+        )}
+
+        {activeTab === "menu" && (
+           <div className="mt-12 bg-white p-10 rounded-[40px] shadow-sm">
+               <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-playfair font-bold">The Library (Menu Management)</h2>
+                  <button onClick={async () => {
+                      const name = prompt("Name:");
+                      const category = prompt("Category (Beverages, Snacks, Main Course):");
+                      const price = prompt("Price (Number):");
+                      if(name && category && price) {
+                          await addMenuItem({ name, category, price: Number(price) });
+                          setMenuItems(await fetchMenu());
+                      }
+                  }} className="text-xs bg-[#1A0F0A] text-white px-4 py-2 rounded-lg font-bold">Add Item</button>
+               </div>
+               <div className="space-y-4">
+                  {menuItems.map(m => (
+                      <div key={m._id} className="flex justify-between items-center p-4 bg-[#FDF8F5] rounded-xl border border-[#2C1810]/10">
+                          <div><span className="font-bold">{m.name}</span> - ${m.price} <span className="opacity-50 text-xs ml-2">{m.category}</span></div>
+                          <button onClick={async () => {
+                              await deleteMenuItem(m._id);
+                              setMenuItems(await fetchMenu());
+                          }} className="text-red-500 text-xs font-bold hover:underline">Remove</button>
+                      </div>
+                  ))}
+               </div>
+           </div>
+        )}
       </div>
     </main>
   );

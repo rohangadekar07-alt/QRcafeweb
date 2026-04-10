@@ -1,9 +1,11 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Coffee, Utensils, IceCream, Droplets, ChevronLeft, Sparkles, Star } from "lucide-react";
+import { Coffee, Utensils, IceCream, Droplets, ChevronLeft, Sparkles, Star, ShoppingBag, X, Trash2, Plus, Minus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { fetchMenu, placeOrder } from "@/utils/api";
 
 const allMenuItems = {
   "Burgers": [
@@ -63,57 +65,212 @@ const allMenuItems = {
   ]
 };
 
+// Group array into object
+const groupMenu = (items) => {
+  return items.reduce((acc, item) => {
+    if (!acc[item.category]) acc[item.category] = [];
+    acc[item.category].push({
+       id: item._id,
+       name: item.name,
+       price: `$${item.price}`,
+       desc: "Freshly prepared",
+       img: "https://plus.unsplash.com/premium_photo-1679548650479-a9aa1760b291?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MXxzZWFyY2h8MXx8c3BlY2lhbHR5JTIwY29mZmVlJTIwbGF0dGUlMjBhcnQlMjBlc3ByZXNzb3xlbnwwfHx8fDE3NzQ5NDc3ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+       available: item.available
+    });
+    return acc;
+  }, {});
+};
+
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("Burgers");
+  const [menuItems, setMenuItems] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [activeSelection, setActiveSelection] = useState(null); // { id, name, price, qty }
+  
+  const searchParams = useSearchParams();
+  const tableId = searchParams.get("table");
+
+  useEffect(() => {
+    const loadMenu = async () => {
+      try {
+        const data = await fetchMenu();
+        const grouped = groupMenu(data);
+        if (Object.keys(grouped).length === 0) {
+            setMenuItems(allMenuItems); // fallback to hardcoded if empty DB
+            setActiveCategory("Burgers");
+        } else {
+            setMenuItems(grouped);
+            setActiveCategory(Object.keys(grouped)[0]);
+        }
+      } catch (err) {
+        console.error("Database connection issue, falling back to local menu:", err);
+        setMenuItems(allMenuItems);
+        setActiveCategory("Burgers");
+      }
+    };
+    loadMenu();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const addToCart = (item) => {
+    setCart((prev) => {
+       const existing = prev.find(i => i.id === item.id);
+       if (existing) {
+          return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + item.qty } : i);
+       }
+       return [...prev, item ];
+    });
+    setActiveSelection(null); // Clear selection after adding to cart
+  };
+
+  const openSelection = (item) => {
+     setActiveSelection({ ...item, qty: 1 });
+  };
+
+  const updateCartQty = (id, delta) => {
+    setCart((prev) => {
+       const existing = prev.find(i => i.id === id);
+       if (!existing) return prev;
+       
+       const newQty = existing.qty + delta;
+       if (newQty <= 0) {
+          return prev.filter(i => i.id !== id);
+       }
+       return prev.map(i => i.id === id ? { ...i, qty: newQty } : i);
+    });
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!tableId) return alert("No table selected! Please scan the QR code to select a table.");
+    if (cart.length === 0) return alert("Cart is empty!");
+    
+    // Calculate Total for DB records
+    const totalAmount = cart.reduce((acc, item) => {
+       const price = parseFloat(item.price.replace('$', ''));
+       return acc + (price * item.qty);
+    }, 0);
+
+    setIsOrdering(true);
+    try {
+      const items = cart.map(c => ({ name: c.name, qty: c.qty }));
+      // Place order directly with unpaid status
+      await placeOrder(tableId, items, totalAmount, "pending");
+      setShowSuccess(true);
+      setCart([]);
+    } catch (err) {
+      alert("Failed to place order: " + err.message);
+    } finally {
+      setIsOrdering(false);
+    }
+  };
+
+  if (!menuItems) {
+      return <div className="min-h-screen flex items-center justify-center bg-[#FDF8F5]">Loading Menu...</div>;
+  }
 
   return (
     <main className="min-h-screen bg-[#FDF8F5] text-[#2C1810]">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#FDF8F5]/80 backdrop-blur-xl border-b border-[#D4A373]/10 px-6 py-6 md:px-12 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2 hover:translate-x-[-4px] transition-transform">
-          <ChevronLeft className="w-5 h-5 text-[#D4A373]" />
-          <span className="text-[10px] uppercase font-black tracking-widest">Back To Sanctuary</span>
-        </Link>
-        <div className="text-xl md:text-2xl font-playfair font-black tracking-tighter">
-          BREWED<span className="text-[#3D4A3A]">MENU</span>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 px-4 py-3 md:px-12 ${isScrolled ? "bg-[#FDF8F5]/60 backdrop-blur-2xl border-b border-[#D4A373]/20 shadow-xl" : "bg-[#FDF8F5] md:bg-transparent"}`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
+          {/* Back Action */}
+          <Link 
+            href={`/${tableId ? `?table=${tableId}` : ""}`} 
+            className="group flex items-center gap-3 bg-[#2C1810]/5 hover:bg-[#2C1810] p-2 pr-6 rounded-full transition-all duration-500"
+          >
+            <div className="bg-[#2C1810] group-hover:bg-[#D4A373] p-1.5 rounded-full text-[#FDF8F5] transition-colors">
+               <ChevronLeft className="w-4 h-4" />
+            </div>
+            <span className="text-[9px] uppercase font-black tracking-[0.2em] text-[#2C1810] group-hover:text-[#FDF8F5] hidden sm:block">Back</span>
+          </Link>
+
+          {/* Luxury Brand Center */}
+          <div className="flex flex-col items-center">
+            <div className="text-xl md:text-3xl font-playfair font-black tracking-tighter text-[#2C1810] relative">
+              BREWED<span className="text-[#D4A373]">MENU</span>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-[#D4A373]/30" />
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+               <span className="text-[8px] uppercase tracking-widest font-black opacity-40">Active Table {tableId || 'T1'}</span>
+            </div>
+          </div>
+          
+          {/* Cart Interaction */}
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className="relative flex items-center gap-3 bg-[#2C1810] text-[#FDF8F5] pl-5 pr-3 py-3 rounded-full shadow-2xl hover:bg-[#3D4A3A] hover:scale-105 active:scale-95 transition-all group border border-white/5"
+          >
+            <span className="text-[9px] uppercase font-black tracking-widest hidden md:block">Sanctuary Bag</span>
+            <div className="relative">
+              <ShoppingBag className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+              {cart.length > 0 && (
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-2 -right-2 bg-[#D4A373] text-[#1A0F0A] w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center border-2 border-[#1A0F0A] shadow-lg shadow-[#D4A373]/40"
+                >
+                  {cart.reduce((a, b) => a + b.qty, 0)}
+                </motion.div>
+              )}
+            </div>
+          </button>
         </div>
-        <div className="w-24 hidden md:block" />
       </nav>
 
-      {/* Hero Banner */}
-      <section className="pt-32 pb-12 px-6 md:px-12 text-center bg-[#2C1810] text-[#FDF8F5]">
-         <motion.div
-           initial={{ opacity: 0, scale: 0.9 }}
-           animate={{ opacity: 1, scale: 1 }}
-           className="max-w-4xl mx-auto space-y-6 py-12"
-         >
-            <span className="text-[#D4A373] text-[10px] tracking-[0.5em] font-black uppercase">The Global Selection</span>
-            <h1 className="text-6xl md:text-8xl font-playfair font-bold">Crafted To Perfection.</h1>
-            <p className="opacity-60 text-lg font-light italic max-w-2xl mx-auto">
-              Our complete 45-item library of sensory obsessions. Michelin-inspired gastronomy for the discerning palate.
-            </p>
-         </motion.div>
-      </section>
+      {/* Hero Banner Removed */}
+      <div className="pt-24 md:pt-32" /> 
+      
+      {/* Professional Categories Tabs */}
+      <section className="sticky top-[72px] z-40 bg-[#FDF8F5]/80 backdrop-blur-xl border-b border-[#2C1810]/5 px-6 py-6 overflow-x-auto no-scrollbar transition-all duration-500">
+         <div className="max-w-4xl mx-auto relative">
+            <div className="flex justify-center items-center md:gap-4 gap-2 w-max md:w-full mx-auto bg-white/40 p-1.5 rounded-[30px] border border-[#2C1810]/5 shadow-inner">
+               {Object.keys(menuItems).map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className="relative px-6 py-3 rounded-[24px] transition-all duration-500 group"
+                  >
+                    {/* Background Active Indicator */}
+                    {activeCategory === cat && (
+                       <motion.div 
+                         layoutId="activeTab"
+                         className="absolute inset-0 bg-[#2C1810] rounded-[22px] shadow-[0_10px_30px_rgba(44,24,16,0.25)]"
+                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                       />
+                    )}
+                    
+                    <div className="relative flex items-center gap-2.5 z-10">
+                       <span className={`transition-all duration-500 ${activeCategory === cat ? "text-[#D4A373]" : "text-[#2C1810]/40 group-hover:text-[#2C1810]"}`}>
+                          {cat === "Burgers" && <Utensils className="w-3.5 h-3.5" />}
+                          {cat === "Pizzas" && <Sparkles className="w-3.5 h-3.5" />}
+                          {cat === "Ice Cream" && <IceCream className="w-3.5 h-3.5" />}
+                          {cat === "Juices" && <Droplets className="w-3.5 h-3.5" />}
+                          {cat === "Coffee" && <Coffee className="w-3.5 h-3.5" />}
+                       </span>
+                       <span className={`text-[10px] uppercase font-black tracking-[0.2em] transition-all duration-500 ${
+                         activeCategory === cat ? "text-white" : "text-[#2C1810]/40 group-hover:text-[#2C1810]"
+                       }`}>
+                         {cat}
+                       </span>
+                    </div>
 
-      {/* Categories Tabs */}
-      <section className="sticky top-[72px] z-40 bg-[#FDF8F5] border-b border-[#D4A373]/10 px-6 overflow-x-auto py-6 no-scrollbar">
-         <div className="flex justify-center md:gap-8 gap-4 w-max md:w-full mx-auto">
-            {Object.keys(allMenuItems).map((cat) => (
-               <button
-                 key={cat}
-                 onClick={() => setActiveCategory(cat)}
-                 className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] uppercase font-black tracking-widest transition-all ${
-                   activeCategory === cat ? "bg-[#2C1810] text-[#FDF8F5] shadow-xl" : "text-[#2C1810]/40 hover:text-[#2C1810]"
-                 }`}
-               >
-                 {cat === "Burgers" && <Utensils className="w-3 h-3" />}
-                 {cat === "Pizzas" && <Sparkles className="w-3 h-3" />}
-                 {cat === "Ice Cream" && <IceCream className="w-3 h-3" />}
-                 {cat === "Juices" && <Droplets className="w-3 h-3" />}
-                 {cat === "Coffee" && <Coffee className="w-3 h-3" />}
-                 {cat}
-               </button>
-            ))}
+                    {/* Subtle dot indicator for hover */}
+                    {activeCategory !== cat && (
+                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#D4A373] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+               ))}
+            </div>
          </div>
       </section>
 
@@ -121,7 +278,7 @@ export default function MenuPage() {
       <section className="py-24 px-6 md:px-12 lg:px-24">
          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
             <AnimatePresence mode="wait">
-               {allMenuItems[activeCategory].map((item, idx) => (
+               {menuItems[activeCategory]?.map((item, idx) => (
                  <motion.div
                    key={item.id}
                    initial={{ opacity: 0, y: 30 }}
@@ -142,9 +299,30 @@ export default function MenuPage() {
                        </div>
                        <h3 className="text-2xl font-playfair font-bold text-[#2C1810] group-hover:text-[#D4A373] transition-colors">{item.name}</h3>
                        <p className="text-sm opacity-60 font-light leading-relaxed flex-grow">{item.desc}</p>
-                       <button className="w-full bg-[#FDF8F5] text-[#2C1810] border border-[#2C1810]/10 py-5 rounded-full text-[10px] uppercase font-black tracking-widest group-hover:bg-[#2C1810] group-hover:text-[#FDF8F5] transition-all flex items-center justify-center gap-3 mt-8">
-                          Add To Order <Sparkles className="w-3 h-3" />
-                       </button>
+                       
+                       <div className="mt-8 h-[60px] flex items-center justify-center">
+                          {cart.find(c => c.id === item.id) ? (
+                            <div className="flex items-center justify-between w-full bg-[#2C1810] text-[#FDF8F5] rounded-full p-2 border border-[#D4A373]/20 shadow-xl overflow-hidden">
+                               <button 
+                                 onClick={() => updateCartQty(item.id, -1)}
+                                 className="w-12 h-12 flex items-center justify-center hover:bg-[#D4A373] hover:text-[#1A0F0A] rounded-full transition-all"
+                               >
+                                  <Minus className="w-4 h-4" />
+                               </button>
+                               <span className="font-black text-lg">{cart.find(c => c.id === item.id).qty}</span>
+                               <button 
+                                 onClick={() => updateCartQty(item.id, 1)}
+                                 className="w-12 h-12 flex items-center justify-center hover:bg-[#D4A373] hover:text-[#1A0F0A] rounded-full transition-all"
+                               >
+                                  <Plus className="w-4 h-4" />
+                               </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => openSelection(item)} className="w-full bg-[#FDF8F5] text-[#2C1810] border border-[#2C1810]/10 py-5 rounded-full text-[10px] uppercase font-black tracking-widest group-hover:bg-[#2C1810] group-hover:text-[#FDF8F5] transition-all flex items-center justify-center gap-3">
+                               Add to Order <Plus className="w-3 h-3" />
+                            </button>
+                          )}
+                       </div>
                     </div>
                  </motion.div>
                ))}
@@ -166,8 +344,200 @@ export default function MenuPage() {
          </div>
       </section>
 
+      {/* Floating Cart Drawer (Right Side Sidebar) */}
+      <AnimatePresence>
+         {isCartOpen && (
+             <>
+               {/* Backdrop */}
+               <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 onClick={() => setIsCartOpen(false)}
+                 className="fixed inset-0 bg-[#1A0F0A]/60 backdrop-blur-md z-[60]"
+               />
+               
+               {/* Drawer */}
+               <motion.div 
+                 initial={{ x: "100%" }}
+                 animate={{ x: 0 }}
+                 exit={{ x: "100%" }}
+                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                 className="fixed right-0 top-0 bottom-0 w-full md:w-[450px] bg-[#FDF8F5] shadow-[-20px_0_60px_rgba(0,0,0,0.1)] z-[70] flex flex-col"
+               >
+                 <div className="p-8 border-b border-[#D4A373]/10 flex justify-between items-center bg-[#2C1810] text-[#FDF8F5]">
+                    <div>
+                       <h3 className="text-2xl font-playfair font-bold">Your Order Stack</h3>
+                       <p className="text-[10px] uppercase tracking-widest opacity-60">Table {tableId || 'Unassigned Santuary'}</p>
+                    </div>
+                    <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                       <X className="w-6 h-6" />
+                    </button>
+                 </div>
+
+                 <div className="flex-grow overflow-y-auto p-8 space-y-6">
+                    {cart.length === 0 ? (
+                       <div className="h-full flex flex-col items-center justify-center opacity-20 space-y-4">
+                          <ShoppingBag className="w-16 h-16" />
+                          <p className="uppercase tracking-[0.2em] font-black text-[10px]">Your stack is empty.</p>
+                       </div>
+                    ) : (
+                       cart.map((item) => (
+                         <div key={item.id} className="flex gap-4 items-center group bg-white p-4 rounded-3xl border border-[#D4A373]/10 shadow-sm hover:shadow-md transition-all">
+                            <div className="w-16 h-16 relative flex-shrink-0 rounded-2xl overflow-hidden border border-[#D4A373]/20">
+                               <Image src={item.img} alt={item.name} fill className="object-cover" />
+                            </div>
+                            <div className="flex-grow space-y-1">
+                               <h4 className="font-playfair font-bold text-sm leading-tight">{item.name}</h4>
+                               <p className="text-[10px] text-[#D4A373] font-bold">{item.price}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                               <div className="flex items-center bg-[#FDF8F5] rounded-full border border-[#D4A373]/10 scale-90 md:scale-100">
+                                  <button 
+                                    onClick={() => updateCartQty(item.id, -1)}
+                                    className="p-2 hover:text-[#D4A373]"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="w-6 text-center text-xs font-bold">{item.qty}</span>
+                                  <button 
+                                    onClick={() => updateCartQty(item.id, 1)}
+                                    className="p-2 hover:text-[#3D4A3A]"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                               </div>
+                            </div>
+                         </div>
+                       ))
+                    )}
+                 </div>
+
+                 {cart.length > 0 && (
+                    <div className="p-8 bg-white border-t border-[#D4A373]/10 space-y-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                       <div className="flex justify-between items-center px-2">
+                          <span className="text-[10px] uppercase font-black tracking-widest opacity-40">Subtotal Estimated</span>
+                          <span className="text-2xl font-playfair font-black text-[#2C1810]">
+                             ${cart.reduce((a, b) => a + (parseFloat(b.price.replace('$','')) * b.qty), 0).toFixed(2)}
+                          </span>
+                       </div>
+                       <button 
+                         onClick={async () => {
+                            await handlePlaceOrder();
+                            setIsCartOpen(false);
+                         }} 
+                         disabled={isOrdering}
+                         className="w-full bg-[#2C1810] text-[#FDF8F5] py-6 rounded-full font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-[#3D4A3A] transition-all flex items-center justify-center gap-3"
+                       >
+                          {isOrdering ? "Transmitting..." : "Confirm & Send to Kitchen"} <Sparkles className="w-4 h-4" />
+                       </button>
+                    </div>
+                 )}
+               </motion.div>
+             </>
+         )}
+      </AnimatePresence>
+
+      {/* Step 2: Contextual Selection Bar (appears when item selected) */}
+      <AnimatePresence>
+         {activeSelection && (
+             <motion.div 
+               initial={{ y: 100, opacity: 0 }} 
+               animate={{ y: 0, opacity: 1 }} 
+               exit={{ y: 100, opacity: 0 }}
+               className="fixed bottom-10 right-6 z-[55] w-[90%] md:w-auto"
+             >
+                <div className="bg-[#2C1810] text-[#FDF8F5] p-6 rounded-[35px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col md:flex-row items-center gap-8 border border-white/10 backdrop-blur-3xl">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 relative rounded-full overflow-hidden border border-[#D4A373]/30">
+                         <Image src={activeSelection.img} alt={activeSelection.name} fill className="object-cover" />
+                      </div>
+                      <div>
+                         <h4 className="font-playfair font-bold text-lg leading-tight">{activeSelection.name}</h4>
+                         <p className="text-[10px] uppercase tracking-widest text-[#D4A373] font-black">{activeSelection.price}</p>
+                      </div>
+                   </div>
+
+                   <div className="flex items-center gap-6">
+                      <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+                         <button 
+                           onClick={() => activeSelection.qty > 1 && setActiveSelection(prev => ({ ...prev, qty: prev.qty - 1 }))} 
+                           className="p-3 hover:text-[#D4A373] transition-colors"
+                         >
+                            <Minus className="w-4 h-4" />
+                         </button>
+                         <span className="w-10 text-center font-black text-lg">{activeSelection.qty}</span>
+                         <button 
+                           onClick={() => setActiveSelection(prev => ({ ...prev, qty: prev.qty + 1 }))} 
+                           className="p-3 hover:text-[#D4A373] transition-colors"
+                         >
+                            <Plus className="w-4 h-4" />
+                         </button>
+                      </div>
+
+                      <button 
+                        onClick={() => addToCart(activeSelection)}
+                        className="bg-[#D4A373] text-[#1A0F0A] px-10 py-4 rounded-full font-black uppercase text-[10px] tracking-widest hover:bg-[#FDF8F5] transition-all flex items-center gap-2 shadow-xl"
+                      >
+                         Add to Cart <Sparkles className="w-4 h-4" />
+                      </button>
+                      
+                      <button onClick={() => setActiveSelection(null)} className="p-2 opacity-40 hover:opacity-100 transition-opacity">
+                         <X className="w-5 h-5" />
+                      </button>
+                   </div>
+                </div>
+             </motion.div>
+         )}
+      </AnimatePresence>
+
+      {/* Professional Success Popup */}
+      <AnimatePresence>
+         {showSuccess && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+               <motion.div 
+                 initial={{ opacity: 0 }} 
+                 animate={{ opacity: 1 }} 
+                 exit={{ opacity: 0 }}
+                 onClick={() => setShowSuccess(false)}
+                 className="absolute inset-0 bg-[#1A0F0A]/80 backdrop-blur-xl"
+               />
+               <motion.div 
+                 initial={{ scale: 0.8, y: 50, opacity: 0 }}
+                 animate={{ scale: 1, y: 0, opacity: 1 }}
+                 exit={{ scale: 0.8, y: 50, opacity: 0 }}
+                 className="relative bg-[#FDF8F5] p-10 md:p-16 rounded-[60px] shadow-3xl max-w-lg w-full text-center border border-[#D4A373]/20"
+               >
+                  <div className="space-y-8">
+                     <div className="flex flex-col items-center gap-2">
+                        <Sparkles className="w-8 h-8 text-[#D4A373] animate-pulse" />
+                        <h4 className="text-xl md:text-2xl font-playfair font-black tracking-tighter text-[#2C1810]">
+                           BREWED<span className="text-[#3D4A3A]">CRAFT</span>
+                        </h4>
+                        <div className="w-12 h-[1px] bg-[#D4A373]/30" />
+                     </div>
+
+                     <div className="space-y-4">
+                        <h2 className="text-4xl md:text-5xl font-playfair font-bold text-[#2C1810]">Selection Confirmed.</h2>
+                        <p className="text-sm opacity-60 font-light italic leading-relaxed">
+                           Your masterpieces are now being prepared at the atelier. We will notify you once they are ready for the sanctuary.
+                        </p>
+                     </div>
+
+                     <button 
+                       onClick={() => setShowSuccess(false)}
+                       className="w-full bg-[#2C1810] text-[#FDF8F5] py-6 rounded-full font-black uppercase text-[10px] tracking-[0.4em] shadow-2xl hover:bg-[#D4A373] hover:text-[#1A0F0A] transition-all"
+                     >
+                        Continue Exploring
+                     </button>
+                  </div>
+               </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
+
       {/* Footer */}
-      <footer className="py-16 bg-[#2C1810] text-center border-t border-white/5">
+      <footer className="py-16 bg-[#2C1810] text-center border-t border-white/5 pb-32">
          <p className="text-[10px] uppercase tracking-[0.5em] text-[#FDF8F5]/30 font-bold">
             BREWED CRAFT ARTISANAL COLLECTIVE • {new Date().getFullYear()}
          </p>
