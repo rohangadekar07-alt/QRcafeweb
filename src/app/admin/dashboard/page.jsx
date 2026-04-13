@@ -13,25 +13,32 @@ import {
   Flame, 
   Coffee,
   ShoppingBag,
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from "lucide-react";
 
 export default function AdminDashboard() {
   const [orders, setOrders] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
-        setOrders(await getOrders());
+        const [ordersData, resData] = await Promise.all([
+          getOrders(),
+          require("@/utils/api").getAllReservations()
+        ]);
+        setOrders(ordersData);
+        setReservations(resData);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchOrders();
+    fetchData();
 
     const socket = io("http://localhost:5000");
     socket.on("new_order", (o) => setOrders(prev => [o, ...prev]));
@@ -43,7 +50,7 @@ export default function AdminDashboard() {
 
   const stats = [
     { label: "Total Rituals", value: orders.length, icon: ShoppingBag, color: "text-[#1A0F0A]", bg: "bg-white" },
-    { label: "Pending", value: orders.filter(o => o.status === "pending").length, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Bookings", value: reservations.length, icon: Calendar, color: "text-[#D4A373]", bg: "bg-[#D4A373]/10" },
     { label: "Preparing", value: orders.filter(o => o.status === "preparing").length, icon: Flame, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Completed", value: orders.filter(o => o.status === "completed").length, icon: CheckCircle2, color: "text-[#3D4A3A]", bg: "bg-[#3D4A3A]/10" },
   ];

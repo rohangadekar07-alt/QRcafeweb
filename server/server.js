@@ -10,6 +10,7 @@ const menuRoutes = require("./routes/menuRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const tableRoutes = require("./routes/tableRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const reservationRoutes = require("./routes/reservationRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -30,6 +31,7 @@ app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/tables", tableRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reservations", reservationRoutes);
 
 // Shared Error Handler
 app.use((err, req, res, next) => {

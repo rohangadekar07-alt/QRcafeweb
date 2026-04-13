@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getOrders, getTables, generateTables, addMenuItem, deleteMenuItem, fetchMenu } from "@/utils/api";
+import { getOrders, getTables, generateTables, addMenuItem, deleteMenuItem, fetchMenu, getAllReservations, cancelReservation } from "@/utils/api";
 import { io } from "socket.io-client";
 
 export default function AdminDashboard() {
@@ -30,6 +30,8 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState([]);
   const [tables, setTables] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [resFilter, setResFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterStatus, setFilterStatus] = useState("all");
   
@@ -40,6 +42,7 @@ export default function AdminDashboard() {
             setTables(await getTables());
             const m = await fetchMenu();
             setMenuItems(m);
+            setReservations(await getAllReservations());
          } catch(e) { console.error(e); }
      };
      loadData();
@@ -55,6 +58,7 @@ export default function AdminDashboard() {
   const sidebarItems = [
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "tables", label: "Tables & QR", icon: LayoutDashboard },
+    { id: "reservations", label: "Reservations", icon: Calendar },
     { id: "staff", label: "The Collective", icon: Users },
     { id: "menu", label: "The Library", icon: Coffee },
     { id: "kitchen", label: "Atelier Status", icon: ChefHat },
@@ -321,6 +325,125 @@ export default function AdminDashboard() {
                   ))}
                </div>
            </div>
+        )}
+
+        {/* ─── Reservations Panel ──────────────────────────────────── */}
+        {activeTab === "reservations" && (
+          <div className="mt-12 space-y-8">
+            {/* Header + refresh */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-3xl font-playfair font-bold text-[#1A0F0A]">Seat Reservations</h2>
+                <p className="text-xs opacity-40 uppercase tracking-widest font-bold mt-1">All upcoming & past bookings</p>
+              </div>
+              <button
+                onClick={async () => setReservations(await getAllReservations())}
+                className="bg-[#1A0F0A] text-white px-6 py-3 rounded-full text-[10px] uppercase tracking-widest font-black hover:bg-[#3D4A3A] transition-all flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" /> Refresh
+              </button>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex gap-3 flex-wrap">
+              {["all", "confirmed", "cancelled"].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setResFilter(f)}
+                  className={`text-[9px] uppercase tracking-[0.2em] font-black px-5 py-2 rounded-full transition-all border ${
+                    resFilter === f
+                      ? "bg-[#1A0F0A] text-white border-[#1A0F0A]"
+                      : "bg-white text-[#1A0F0A]/40 border-[#1A0F0A]/10 hover:text-[#1A0F0A]"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-6">
+              {[
+                { label: "Total", value: reservations.length, color: "bg-[#1A0F0A]" },
+                { label: "Confirmed", value: reservations.filter(r => r.status === "confirmed").length, color: "bg-[#3D4A3A]" },
+                { label: "Cancelled", value: reservations.filter(r => r.status === "cancelled").length, color: "bg-red-600" },
+              ].map(s => (
+                <div key={s.label} className={`${s.color} text-white rounded-[30px] p-8 text-center`}>
+                  <p className="text-4xl font-playfair font-black">{s.value}</p>
+                  <p className="text-[9px] uppercase tracking-[0.3em] opacity-60 font-black mt-2">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Reservation Cards */}
+            <div className="space-y-4">
+              {reservations
+                .filter(r => resFilter === "all" || r.status === resFilter)
+                .map(r => (
+                  <motion.div
+                    key={r._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-[28px] p-8 border border-[#2C1810]/5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:border-[#D4A373]/30 hover:-translate-y-1 transition-all"
+                  >
+                    <div className="flex items-center gap-6">
+                      {/* Table Badge */}
+                      <div className="w-16 h-16 bg-[#1A0F0A] rounded-2xl flex items-center justify-center text-white font-black text-lg shrink-0">
+                        {r.tableNumber}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="font-black text-[#1A0F0A] text-lg">{r.name}</p>
+                          {r.isBirthday && (
+                            <span className="text-[9px] font-black uppercase tracking-widest bg-pink-100 text-pink-600 border border-pink-200 px-3 py-1 rounded-full flex items-center gap-1">
+                              🎂 Birthday
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs opacity-50 font-mono">{r.email}</p>
+                        <div className="flex flex-wrap items-center gap-3 mt-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest bg-[#FDF8F5] px-3 py-1 rounded-full border border-[#2C1810]/10">
+                            📅 {r.date}
+                          </span>
+                          <span className="text-[9px] font-black uppercase tracking-widest bg-[#FDF8F5] px-3 py-1 rounded-full border border-[#2C1810]/10">
+                            🕐 {r.time}
+                          </span>
+                          <span className="text-[9px] font-black uppercase tracking-widest bg-[#FDF8F5] px-3 py-1 rounded-full border border-[#2C1810]/10">
+                            👥 {r.partySize} guests
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full ${
+                        r.status === "confirmed"
+                          ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                          : "bg-red-500/10 text-red-500 border border-red-500/20"
+                      }`}>
+                        {r.status}
+                      </span>
+                      {r.status === "confirmed" && (
+                        <button
+                          onClick={async () => {
+                            await cancelReservation(r._id);
+                            setReservations(await getAllReservations());
+                          }}
+                          className="text-[9px] font-black uppercase tracking-widest text-red-500 border border-red-500/20 px-4 py-2 rounded-full hover:bg-red-500 hover:text-white transition-all"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              {reservations.filter(r => resFilter === "all" || r.status === resFilter).length === 0 && (
+                <div className="py-24 text-center opacity-20">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 text-[#1A0F0A]" />
+                  <p className="text-[10px] uppercase tracking-[0.4em] font-black text-[#1A0F0A]">No reservations found</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </main>

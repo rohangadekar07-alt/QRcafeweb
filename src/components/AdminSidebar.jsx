@@ -9,7 +9,8 @@ import {
   Grid, 
   Sparkles,
   Bell,
-  User
+  User,
+  CalendarCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -27,6 +28,7 @@ export default function AdminSidebar() {
     { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/admin/dashboard" },
     { id: "menu", label: "Menu", icon: Coffee, href: "/admin/menu" },
     { id: "tables", label: "Tables", icon: Grid, href: "/admin/tables" },
+    { id: "reservations", label: "Bookings", icon: CalendarCheck, href: "/admin/reservations" },
   ];
 
   return (

@@ -141,3 +141,45 @@ export const verifyPayment = async (paymentData) => {
     if (!res.ok) throw new Error(data.message);
     return data;
 };
+
+// ─── Reservations ───────────────────────────────────────────────────────────
+
+export const createReservation = async (payload) => {
+    const res = await fetch(`${API_URL}/reservations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw Object.assign(new Error(data.message), { conflict: data.conflict });
+    return data;
+};
+
+export const getAllReservations = async () => {
+    const res = await fetch(`${API_URL}/reservations`, {
+        method: "GET",
+        headers: getHeaders(false)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    return data;
+};
+
+export const cancelReservation = async (id) => {
+    const res = await fetch(`${API_URL}/reservations/${id}/cancel`, {
+        method: "PUT",
+        headers: getHeaders(false)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    return data;
+};
+
+export const checkSlotAvailability = async (tableNumber, date, time) => {
+    const params = new URLSearchParams({ tableNumber, date, time });
+    const res = await fetch(`${API_URL}/reservations/check?${params}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    return data; // { available: true | false }
+};
+

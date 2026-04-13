@@ -9,6 +9,7 @@ export default function AdminHeader() {
     if (pathname.includes("dashboard")) return "Dashboard";
     if (pathname.includes("menu")) return "Menu Library";
     if (pathname.includes("tables")) return "Tables & QR";
+    if (pathname.includes("reservations")) return "Booking Registry";
     return "Management";
   };
 
